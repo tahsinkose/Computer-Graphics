@@ -1,0 +1,3 @@
+Initially, you should give `make` command for compilation. 
+Then you can run for all the scenes buy executing `./run.sh`. 
+If you want to give a single scene file execute `./raytracer scene_file.xml
