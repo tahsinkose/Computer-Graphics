@@ -1,2 +1,2 @@
 all:
-	g++ *.cpp -o raytracer -O3 -std=c++14
+	g++ *.cpp -o raytracer -O3 -std=c++14 -lpthread -ljpeg

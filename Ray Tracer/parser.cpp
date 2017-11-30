@@ -139,7 +139,6 @@ void parser::Scene::loadFromXml(const std::string& filepath)
         materials.push_back(material);
         element = element->NextSiblingElement("Material");
     }
-
     //Get VertexData
     element = root->FirstChildElement("VertexData");
     stream << element->GetText() << std::endl;

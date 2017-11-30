@@ -7,7 +7,6 @@
 #include <cfloat>
 
 
-typedef unsigned char RGB[3];
 
 #define EPSILON 0.0001
 #define IS_ZERO(x) x<EPSILON && x>-EPSILON ? 0 : x

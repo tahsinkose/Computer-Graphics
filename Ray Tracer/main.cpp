@@ -1,6 +1,8 @@
 #include <iostream>
 #include "parser.h"
 #include "ppm.h"
+#include "jpeg.h"
+#include "ctpl_stl.h"
 #include <climits>
 #include <map>
 #include <iomanip>
@@ -228,6 +230,8 @@ parser::Vec3f recursive_ray_tracer(parser::Vec3f& d,parser::Vec3f& o,int recursi
         mirror = scene.materials[material_id-1].mirror;
         phong_exponent = scene.materials[material_id-1].phong_exponent;
     }
+    else
+        return RGB;
     /*AMBIENT LIGHT is not AFFECTED by the shadows*/
     if((triangle_t>0 && triangle_t<FLT_MAX) || (sphere_t>0 && sphere_t<FLT_MAX)){
         RGB.x= ambient.x * ambient_light.x;
@@ -305,8 +309,7 @@ int main(int argc, char* argv[])
 {
     // Sample usage for reading an XML scene file
     auto start = get_time::now();
-    //parser::Scene scene;
-
+    
     scene.loadFromXml(argv[1]);
     
     
@@ -356,26 +359,37 @@ int main(int argc, char* argv[])
         float right = camera.near_plane.y;
         float bottom = camera.near_plane.z;
         float top = camera.near_plane.w;
-        
+        float right_left = right-left;
+        float top_bottom = top-bottom;
+
         parser::Vec3f q = m + (u*left) + (v*top);
         
         int height = camera.image_height;
         int width = camera.image_width;
         vector<vector<vector<unsigned char> > > image (height,vector<vector<unsigned char> > (width, vector<unsigned char>(3)));
-
+        ctpl::thread_pool pool(height);
+        // Spatial Localization is exploited. Though, gain is not as expected.
+        int shared_var = 0;
         for(int i=0;i<height;i++){
-            for(int j=0;j<width;j++){
-                float s_u = (right - left) * (i + 0.5)/width;
-                float s_v = (top - bottom) * (j + 0.5)/height;
-                parser::Vec3f s = q + (u*s_u) - (v*s_v);
-    
-                parser::Vec3f o = camera.position;
-                parser::Vec3f d = s - o;
-                parser::Vec3f RGB = recursive_ray_tracer(d,o,recursion_depth);
-                FillColor(RGB,image,i,j);
-            }
+            pool.push([&pool,i, &q, &u,&v, &camera, &image, &height, &width, &right_left, &top_bottom, &recursion_depth,&shared_var](int id){
+                float s_v = top_bottom * (i + 0.5)/height;
+                for(int j=0;j<width;j++){
+                    float s_u = right_left * (j + 0.5)/width;
+                    parser::Vec3f s = q + (u*s_u) - (v*s_v);
+                    parser::Vec3f o = camera.position;
+                    parser::Vec3f d = s - o;
+                    parser::Vec3f RGB = recursive_ray_tracer(d,o,recursion_depth);
+                    FillColor(RGB,image,i,j);
+                }
+            });
         }
-        write_ppm(camera.image_name.c_str(),image,width,height);
+        pool.stop(true);
+        //write_ppm(camera.image_name.c_str(),image,width,height);
+        string delimiter = ".";
+        string token = camera.image_name.substr(0, camera.image_name.find(delimiter));
+        
+        token.append(".jpeg");
+        write_jpeg(token.c_str(), image, width, height);
     }
     auto end = get_time::now();
     auto differ = end - start;

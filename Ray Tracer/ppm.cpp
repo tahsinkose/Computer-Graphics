@@ -20,8 +20,7 @@ void write_ppm(const char* filename, std::vector<std::vector<std::vector<unsigne
         {
             for (size_t c = 0; c < 3; ++c)
             {
-                color = data[i][j][c];
-
+                color = data[j][i][c];
                 if (i == width - 1 && c == 2)
                 {
                     (void) fprintf(outfile, "%d", color);
